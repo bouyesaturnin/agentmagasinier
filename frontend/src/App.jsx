@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import ChatPage from './pages/ChatPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import RegisterPage from './pages/RegisterPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -20,6 +21,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
@@ -28,3 +30,4 @@ export default function App() {
     </BrowserRouter>
   )
 }
+

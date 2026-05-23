@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export default function LoginPage() {
@@ -68,11 +68,24 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          <div style={styles.forgotRow}>
+            <Link to="/forgot-password" style={styles.forgotLink}>
+              Mot de passe oublié ?
+            </Link>
+          </div>
+
           {error && <p style={styles.error}>{error}</p>}
+
           <button style={{ ...styles.btn, opacity: loading ? 0.7 : 1 }} type="submit" disabled={loading}>
             {loading ? 'Connexion en cours…' : 'Se connecter'}
           </button>
         </form>
+
+        <p style={styles.registerRow}>
+          Pas encore de compte ?{' '}
+          <Link to="/register" style={styles.registerLink}>Créer un compte</Link>
+        </p>
 
         <div style={styles.hint}>
           <span style={styles.hintDot}></span>
@@ -84,38 +97,10 @@ export default function LoginPage() {
 }
 
 const styles = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'var(--navy)',
-    padding: '24px',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '400px',
-    background: 'var(--navy-mid)',
-    border: '1px solid var(--navy-border)',
-    borderRadius: '16px',
-    padding: '40px',
-  },
-  logoRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '32px',
-  },
-  logoIcon: {
-    width: '44px',
-    height: '44px',
-    background: 'var(--gold-dim)',
-    border: '1px solid rgba(201,168,67,0.3)',
-    borderRadius: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  page: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--navy)', padding: '24px' },
+  card: { width: '100%', maxWidth: '400px', background: 'var(--navy-mid)', border: '1px solid var(--navy-border)', borderRadius: '16px', padding: '40px' },
+  logoRow: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' },
+  logoIcon: { width: '44px', height: '44px', background: 'var(--gold-dim)', border: '1px solid rgba(201,168,67,0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   brand: { fontWeight: 600, fontSize: '13px', letterSpacing: '2px', color: 'var(--gold)', margin: 0 },
   sub: { fontSize: '11px', color: 'var(--muted)', margin: 0, marginTop: '2px' },
   title: { fontSize: '22px', fontWeight: 500, color: 'var(--white)', marginBottom: '6px' },
@@ -123,37 +108,13 @@ const styles = {
   form: { display: 'flex', flexDirection: 'column', gap: '16px' },
   field: { display: 'flex', flexDirection: 'column', gap: '6px' },
   label: { fontSize: '12px', color: 'var(--muted)', letterSpacing: '0.5px', fontWeight: 500 },
-  input: {
-    background: 'var(--navy)',
-    border: '1px solid var(--navy-border)',
-    borderRadius: '8px',
-    padding: '10px 14px',
-    color: 'var(--white)',
-    fontSize: '14px',
-    outline: 'none',
-  },
+  input: { background: 'var(--navy)', border: '1px solid var(--navy-border)', borderRadius: '8px', padding: '10px 14px', color: 'var(--white)', fontSize: '14px', outline: 'none' },
+  forgotRow: { display: 'flex', justifyContent: 'flex-end', marginTop: '-8px' },
+  forgotLink: { fontSize: '12px', color: 'var(--gold)', textDecoration: 'none', opacity: 0.8 },
   error: { fontSize: '13px', color: 'var(--danger)', padding: '8px 12px', background: 'rgba(224,82,82,0.1)', borderRadius: '6px' },
-  btn: {
-    background: 'var(--gold)',
-    color: 'var(--navy)',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '12px',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: '4px',
-    letterSpacing: '0.3px',
-  },
-  hint: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginTop: '24px',
-    fontSize: '11px',
-    color: 'var(--muted)',
-  },
-  hintDot: {
-    width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', flexShrink: 0,
-  },
+  btn: { background: 'var(--gold)', color: 'var(--navy)', border: 'none', borderRadius: '8px', padding: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '4px', letterSpacing: '0.3px' },
+  registerRow: { marginTop: '20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' },
+  registerLink: { color: 'var(--gold)', textDecoration: 'none', fontWeight: 500 },
+  hint: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', fontSize: '11px', color: 'var(--muted)' },
+  hintDot: { width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', flexShrink: 0 },
 }
