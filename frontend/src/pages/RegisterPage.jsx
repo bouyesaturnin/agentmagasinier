@@ -147,3 +147,4 @@ const s = {
   loginLink: { marginTop: '20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' },
   link: { color: 'var(--gold)', textDecoration: 'none' },
 }
+

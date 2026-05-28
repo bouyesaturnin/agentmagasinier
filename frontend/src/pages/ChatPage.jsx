@@ -23,7 +23,6 @@ function exportToPDF(content, filename) {
     font-family: 'Segoe UI', Arial, sans-serif;
     font-size: 14px; line-height: 1.7;
   `
-
   const header = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #1B2A4A;">
       <div style="background:#1B2A4A;padding:8px 14px;border-radius:6px;">
@@ -35,7 +34,6 @@ function exportToPDF(content, filename) {
       </div>
     </div>
   `
-
   const styledContent = content
     .replace(/^### (.+)$/gm, '<h3 style="color:#1B2A4A;font-size:15px;font-weight:600;margin:16px 0 6px;">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 style="color:#1B2A4A;font-size:17px;font-weight:700;margin:20px 0 8px;">$1</h2>')
@@ -45,17 +43,14 @@ function exportToPDF(content, filename) {
     .replace(/^(\d+)\. (.+)$/gm, '<li style="margin:3px 0;"><span style="font-weight:600;color:#1B2A4A;">$1.</span> $2</li>')
     .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #E5E7EB;margin:16px 0;">')
     .replace(/\n/g, '<br>')
-
   const footer = `
     <div style="margin-top:40px;padding-top:14px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:11px;color:#9CA3AF;">Document généré par Agent API — LIDL_CAMPUS</span>
       <span style="font-size:11px;color:#9CA3AF;">Confidentiel</span>
     </div>
   `
-
   container.innerHTML = header + `<div style="color:#111827;">${styledContent}</div>` + footer
   document.body.appendChild(container)
-
   return html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -64,13 +59,11 @@ function exportToPDF(content, filename) {
     const imgW = pageW
     const imgH = (canvas.height * imgW) / canvas.width
     let yPos = 0
-
     while (yPos < imgH) {
       if (yPos > 0) pdf.addPage()
       pdf.addImage(imgData, 'PNG', 0, -yPos, imgW, imgH)
       yPos += pageH
     }
-
     pdf.save(`${filename}.pdf`)
     document.body.removeChild(container)
   })
@@ -134,11 +127,9 @@ export default function ChatPage() {
     const msg = (text || input).trim()
     if (!msg || loading) return
     setInput('')
-
     const userMsg = { id: Date.now(), role: 'user', content: msg, created_at: new Date().toISOString() }
     setMessages(prev => [...prev, userMsg])
     setLoading(true)
-
     try {
       const { data } = await api.post('/agent/chat/', {
         message: msg,
@@ -246,14 +237,26 @@ export default function ChatPage() {
 
       {/* MAIN */}
       <main style={s.main}>
+        {/* TOPBAR — bouton menu + dashboard + statut */}
         <div style={s.topbar}>
-          <button style={s.menuBtn} onClick={() => setSidebarOpen(v => !v)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button style={s.menuBtn} onClick={() => setSidebarOpen(v => !v)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            <button style={s.dashBtn} onClick={() => navigate('/dashboard')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              Tableau de bord
+            </button>
+          </div>
           <div style={s.topbarStatus}>
             <div style={s.statusDot}></div>
             <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Agent API opérationnel</span>
@@ -428,7 +431,8 @@ const s = {
   logoutBtn: { background: 'none', color: 'var(--muted)', padding: '4px', flexShrink: 0 },
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--navy-border)', background: 'var(--navy)' },
-  menuBtn: { background: 'none', color: 'var(--muted)', padding: '6px', borderRadius: '6px' },
+  menuBtn: { background: 'none', color: 'var(--muted)', padding: '6px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
+  dashBtn: { display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--navy-light)', border: '1px solid var(--navy-border)', borderRadius: '8px', padding: '6px 12px', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' },
   topbarStatus: { display: 'flex', alignItems: 'center', gap: '8px' },
   statusDot: { width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success)' },
   messagesArea: { flex: 1, overflowY: 'auto', padding: '0' },
