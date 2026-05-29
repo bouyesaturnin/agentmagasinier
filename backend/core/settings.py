@@ -104,5 +104,8 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173', cast=Csv())
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://agentmagasinier.*\.vercel\.app$",
+]
 
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
