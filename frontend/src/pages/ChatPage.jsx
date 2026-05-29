@@ -6,13 +6,83 @@ import api from '../services/api'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-const SUGGESTIONS = [
-  'Comment traiter un écart d\'inventaire ?',
-  'Calcule un stock de sécurité : 50 unités/jour, délai 7 jours, stock mini 3 jours',
-  'Génère une fiche de non-conformité pour une livraison endommagée',
-  'Explique la méthode FIFO et quand l\'utiliser à LIDL_CAMPUS',
-  'Quels sont les indicateurs logistiques clés à suivre ?',
-]
+function getContextualSuggestions() {
+  const now = new Date()
+  const hour = now.getHours()
+  const day = now.getDay()
+  const isWeekend = day === 0 || day === 6
+
+  if (isWeekend) return {
+    label: '📋 Weekend — Questions générales',
+    suggestions: [
+      'Quels sont les indicateurs logistiques clés à suivre ?',
+      'Explique la méthode ABC de classification des stocks',
+      'Comment optimiser l\'espace de stockage à LIDL_CAMPUS ?',
+      'Quelles sont les bonnes pratiques de la méthode 5S ?',
+      'Comment calculer le taux de rotation des stocks ?',
+    ]
+  }
+  if (hour >= 6 && hour < 10) return {
+    label: '🌅 Matin — Réception & contrôle',
+    suggestions: [
+      'Génère un bon de réception pour une livraison de produits frais',
+      'Comment contrôler la conformité d\'une livraison fournisseur ?',
+      'Génère une fiche de non-conformité pour une livraison endommagée',
+      'Quelles sont les étapes du contrôle à réception ?',
+      'Comment traiter un écart entre BL et marchandise reçue ?',
+    ]
+  }
+  if (hour >= 10 && hour < 12) return {
+    label: '📦 Matinée — Préparation & picking',
+    suggestions: [
+      'Comment organiser efficacement le picking à LIDL_CAMPUS ?',
+      'Quelles sont les méthodes de préparation de commandes ?',
+      'Comment réduire les erreurs de picking ?',
+      'Explique la méthode FIFO et quand l\'utiliser à LIDL_CAMPUS',
+      'Comment gérer les ruptures de stock lors du picking ?',
+    ]
+  }
+  if (hour >= 12 && hour < 14) return {
+    label: '🚚 Midi — Expédition & suivi',
+    suggestions: [
+      'Génère un bon d\'expédition pour une commande client',
+      'Comment préparer les documents d\'expédition ?',
+      'Quels contrôles faire avant l\'expédition d\'une commande ?',
+      'Comment suivre le statut des expéditions en cours ?',
+      'Que faire en cas de retard de livraison ?',
+    ]
+  }
+  if (hour >= 14 && hour < 17) return {
+    label: '📊 Après-midi — Stocks & réapprovisionnement',
+    suggestions: [
+      'Calcule un stock de sécurité : 50 unités/jour, délai 7 jours, stock mini 3 jours',
+      'Comment identifier les articles en rupture imminente ?',
+      'Génère un rapport de niveau de stock pour les produits critiques',
+      'Comment calculer le point de commande ?',
+      'Quels articles nécessitent un réapprovisionnement urgent ?',
+    ]
+  }
+  if (hour >= 17 && hour < 20) return {
+    label: '🌙 Soir — Inventaire & rapport',
+    suggestions: [
+      'Génère un rapport d\'inventaire de fin de journée',
+      'Comment traiter un écart d\'inventaire découvert en fin de journée ?',
+      'Quels indicateurs inclure dans le rapport d\'activité quotidien ?',
+      'Comment clôturer les opérations de la journée ?',
+      'Génère un résumé des entrées/sorties de la journée',
+    ]
+  }
+  return {
+    label: '🌃 Hors horaires — Logistique générale',
+    suggestions: [
+      'Quels sont les indicateurs logistiques clés à suivre ?',
+      'Comment optimiser l\'espace de stockage à LIDL_CAMPUS ?',
+      'Explique la méthode ABC de classification des stocks',
+      'Comment prévenir les accidents dans l\'entrepôt ?',
+      'Quelles sont les normes de sécurité en entrepôt ?',
+    ]
+  }
+}
 
 function exportToPDF(content, filename) {
   const container = document.createElement('div')
@@ -73,6 +143,7 @@ function getFilename(content) {
   const c = content.toLowerCase()
   if (c.includes('non-conformit')) return 'fiche-non-conformite'
   if (c.includes('bon de r')) return 'bon-reception'
+  if (c.includes('bon d\'exp')) return 'bon-expedition'
   if (c.includes('inventaire')) return 'rapport-inventaire'
   if (c.includes('stock')) return 'rapport-stock'
   if (c.includes('fifo') || c.includes('lifo')) return 'procedure-stockage'
@@ -91,6 +162,7 @@ export default function ChatPage() {
   const [exportingId, setExportingId] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const { label, suggestions } = getContextualSuggestions()
 
   useEffect(() => { loadConversations() }, [])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -237,7 +309,6 @@ export default function ChatPage() {
 
       {/* MAIN */}
       <main style={s.main}>
-        {/* TOPBAR — bouton menu + dashboard + statut */}
         <div style={s.topbar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(v => !v)}>
@@ -274,8 +345,12 @@ export default function ChatPage() {
               </div>
               <h2 style={s.welcomeTitle}>Bonjour{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} !</h2>
               <p style={s.welcomeText}>Je suis <strong>Agent API</strong>, votre assistant logistique dédié à <strong>LIDL_CAMPUS</strong>. Comment puis-je vous aider aujourd'hui ?</p>
+
+              {/* Label contextuel */}
+              <div style={s.contextLabel}>{label}</div>
+
               <div style={s.chips}>
-                {SUGGESTIONS.map((sug, i) => (
+                {suggestions.map((sug, i) => (
                   <button key={i} style={s.chip} onClick={() => sendMessage(sug)}>{sug}</button>
                 ))}
               </div>
@@ -428,7 +503,7 @@ const s = {
   avatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'var(--gold-dim)', border: '1px solid rgba(201,168,67,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 600, color: 'var(--gold)', flexShrink: 0 },
   userName: { fontSize: '12px', fontWeight: 500, color: 'var(--white)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   userRole: { fontSize: '10px', color: 'var(--muted)', margin: 0, textTransform: 'capitalize' },
-  logoutBtn: { background: 'none', color: 'var(--muted)', padding: '4px', flexShrink: 0 },
+  logoutBtn: { background: 'none', color: 'var(--muted)', padding: '4px', flexShrink: 0, border: 'none', cursor: 'pointer' },
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--navy-border)', background: 'var(--navy)' },
   menuBtn: { background: 'none', color: 'var(--muted)', padding: '6px', borderRadius: '6px', border: 'none', cursor: 'pointer' },
@@ -439,8 +514,9 @@ const s = {
   welcome: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px 24px', textAlign: 'center' },
   welcomeIcon: { width: '64px', height: '64px', background: 'var(--gold-dim)', border: '1px solid rgba(201,168,67,0.2)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' },
   welcomeTitle: { fontSize: '22px', fontWeight: 500, marginBottom: '10px', color: 'var(--white)' },
-  welcomeText: { fontSize: '14px', color: 'var(--muted)', maxWidth: '460px', lineHeight: 1.7, marginBottom: '28px' },
-  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '580px' },
+  welcomeText: { fontSize: '14px', color: 'var(--muted)', maxWidth: '460px', lineHeight: 1.7, marginBottom: '16px' },
+  contextLabel: { fontSize: '12px', color: 'var(--gold)', background: 'var(--gold-dim)', border: '1px solid rgba(201,168,67,0.2)', borderRadius: '20px', padding: '5px 14px', marginBottom: '16px', letterSpacing: '0.3px' },
+  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '620px' },
   chip: { background: 'var(--navy-mid)', border: '1px solid var(--navy-border)', borderRadius: '20px', padding: '7px 14px', fontSize: '12px', color: 'var(--muted)', cursor: 'pointer' },
   messageList: { padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' },
   msgRow: { display: 'flex', gap: '10px', alignItems: 'flex-start', animation: 'fadeIn 0.2s ease' },
@@ -451,7 +527,7 @@ const s = {
   bubbleAgent: { background: 'var(--navy-light)', border: '1px solid var(--navy-border)', borderTopLeftRadius: '4px', color: 'var(--white)' },
   bubbleUser: { background: '#1B3A6B', border: '1px solid #2E4470', borderTopRightRadius: '4px', color: 'var(--white)' },
   pdfBtn: { display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'transparent', border: '1px solid var(--navy-border)', borderRadius: '6px', color: 'var(--muted)', fontSize: '11px', cursor: 'pointer' },
-  pdfBtnActive: { color: 'var(--gold)', borderColor: 'rgba(201,168,67,0.4)' },
+  pdfBtnActive: { border: '1px solid rgba(201,168,67,0.4)', color: 'var(--gold)' },
   typing: { display: 'flex', gap: '4px', alignItems: 'center', padding: '2px 0' },
   dot: { width: '7px', height: '7px', borderRadius: '50%', background: 'var(--gold)', animation: 'blink 1.2s infinite' },
   inputArea: { padding: '16px 20px 20px', borderTop: '1px solid var(--navy-border)', background: 'var(--navy)' },
