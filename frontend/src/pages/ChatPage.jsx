@@ -178,7 +178,7 @@ export default function ChatPage() {
     try {
       const { data } = await api.get(`/agent/conversations/${id}/`)
       setActiveConvId(id)
-      setMessages(data.messages)
+      setMessages(data.messages.map(m => ({ ...m, stock_alert: false })))
     } catch {}
   }
 
@@ -208,7 +208,10 @@ export default function ChatPage() {
         conversation_id: activeConvId,
       })
       setActiveConvId(data.conversation_id)
-      setMessages(prev => [...prev, data.message])
+      setMessages(prev => [...prev, {
+        ...data.message,
+        stock_alert: data.stock_alert_sent || false,
+      }])
       loadConversations()
     } catch {
       setMessages(prev => [...prev, {
@@ -216,6 +219,7 @@ export default function ChatPage() {
         role: 'assistant',
         content: 'Une erreur est survenue. Vérifiez votre connexion et réessayez.',
         created_at: new Date().toISOString(),
+        stock_alert: false,
       }])
     } finally {
       setLoading(false)
@@ -325,14 +329,14 @@ export default function ChatPage() {
                 <rect x="14" y="14" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/>
               </svg>
-              Tableau de bord
+              Dashboard
             </button>
             <button style={s.dashBtn} onClick={() => navigate('/templates')}>
-               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-               </svg>
-                    Templates
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              Templates
             </button>
           </div>
           <div style={s.topbarStatus}>
@@ -352,10 +356,7 @@ export default function ChatPage() {
               </div>
               <h2 style={s.welcomeTitle}>Bonjour{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} !</h2>
               <p style={s.welcomeText}>Je suis <strong>Agent API</strong>, votre assistant logistique dédié à <strong>LIDL_CAMPUS</strong>. Comment puis-je vous aider aujourd'hui ?</p>
-
-              {/* Label contextuel */}
               <div style={s.contextLabel}>{label}</div>
-
               <div style={s.chips}>
                 {suggestions.map((sug, i) => (
                   <button key={i} style={s.chip} onClick={() => sendMessage(sug)}>{sug}</button>
@@ -381,30 +382,38 @@ export default function ChatPage() {
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.role === 'assistant' && (
-                      <button
-                        style={{ ...s.pdfBtn, ...(exportingId === msg.id ? s.pdfBtnActive : {}) }}
-                        onClick={() => handleExport(msg)}
-                        disabled={exportingId === msg.id}
-                        title="Télécharger en PDF"
-                      >
-                        {exportingId === msg.id ? (
-                          <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
-                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                            </svg>
-                            Génération…
-                          </>
-                        ) : (
-                          <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,10 12,15 17,10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                            Exporter PDF
-                          </>
+                      <div style={s.msgActions}>
+                        <button
+                          style={{ ...s.pdfBtn, ...(exportingId === msg.id ? s.pdfBtnActive : {}) }}
+                          onClick={() => handleExport(msg)}
+                          disabled={exportingId === msg.id}
+                          title="Télécharger en PDF"
+                        >
+                          {exportingId === msg.id ? (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                              </svg>
+                              Génération…
+                            </>
+                          ) : (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                              Exporter PDF
+                            </>
+                          )}
+                        </button>
+                        {msg.stock_alert && (
+                          <div style={s.alertBadge}>
+                            <span>⚠️</span>
+                            Alerte rupture envoyée
+                          </div>
                         )}
-                      </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -461,14 +470,11 @@ export default function ChatPage() {
         @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-
         .prose p { margin: 6px 0; }
         .prose p:first-child { margin-top: 0; }
         .prose p:last-child { margin-bottom: 0; }
         .prose h1, .prose h2, .prose h3 { font-weight: 600; margin: 14px 0 6px; color: var(--gold); }
-        .prose h1 { font-size: 16px; }
-        .prose h2 { font-size: 15px; }
-        .prose h3 { font-size: 14px; }
+        .prose h1 { font-size: 16px; } .prose h2 { font-size: 15px; } .prose h3 { font-size: 14px; }
         .prose ul, .prose ol { padding-left: 20px; margin: 6px 0; }
         .prose li { margin: 4px 0; }
         .prose strong { color: var(--white); font-weight: 600; }
@@ -533,8 +539,10 @@ const s = {
   bubble: { width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.7 },
   bubbleAgent: { background: 'var(--navy-light)', border: '1px solid var(--navy-border)', borderTopLeftRadius: '4px', color: 'var(--white)' },
   bubbleUser: { background: '#1B3A6B', border: '1px solid #2E4470', borderTopRightRadius: '4px', color: 'var(--white)' },
+  msgActions: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
   pdfBtn: { display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'transparent', border: '1px solid var(--navy-border)', borderRadius: '6px', color: 'var(--muted)', fontSize: '11px', cursor: 'pointer' },
   pdfBtnActive: { border: '1px solid rgba(201,168,67,0.4)', color: 'var(--gold)' },
+  alertBadge: { display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', background: 'rgba(224,82,82,0.1)', border: '1px solid rgba(224,82,82,0.3)', borderRadius: '6px', color: '#E05252', fontSize: '11px', fontWeight: 500 },
   typing: { display: 'flex', gap: '4px', alignItems: 'center', padding: '2px 0' },
   dot: { width: '7px', height: '7px', borderRadius: '50%', background: 'var(--gold)', animation: 'blink 1.2s infinite' },
   inputArea: { padding: '16px 20px 20px', borderTop: '1px solid var(--navy-border)', background: 'var(--navy)' },
