@@ -6,6 +6,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
+import TemplatesPage from './pages/TemplatesPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -27,8 +28,10 @@ export default function App() {
         <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/templates" element={<PrivateRoute><TemplatesPage /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/chat" replace />} />
       </Routes>
     </BrowserRouter>
   )
 }
+
