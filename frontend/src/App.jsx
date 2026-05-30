@@ -7,6 +7,8 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import TemplatesPage from './pages/TemplatesPage'
+import StocksPage from './pages/StocksPage'
+import OfflineBanner from './components/OfflineBanner'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -21,6 +23,7 @@ function PrivateRoute({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -29,9 +32,9 @@ export default function App() {
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route path="/templates" element={<PrivateRoute><TemplatesPage /></PrivateRoute>} />
+        <Route path="/stocks" element={<PrivateRoute><StocksPage /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/chat" replace />} />
       </Routes>
     </BrowserRouter>
   )
 }
-

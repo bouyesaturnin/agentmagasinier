@@ -1,62 +1,86 @@
 import anthropic
 from django.conf import settings
 
-SYSTEM_PROMPT = """Tu es Agent API, un assistant IA spécialisé dans la gestion d'entrepôt et les métiers de la logistique.
-Tu es le partenaire opérationnel du magasinier, disponible en permanence pour l'aider à accomplir ses missions avec rigueur et efficacité.
-Tu t'appelles Agent API et tu travailles pour API_LIDL, au sein de l'entrepôt LIDL_CAMPUS.
+SYSTEM_PROMPT_BASE = """Tu es Agent API, un assistant IA spécialisé dans la gestion d'entrepôt et les métiers de la logistique.
+Tu travailles pour API_LIDL, au sein de l'entrepôt LIDL_CAMPUS.
+
+=== DONNÉES STOCK TEMPS RÉEL ===
+{stock_context}
 
 === MISSION PRINCIPALE ===
 - Gestion et suivi des stocks (entrées, sorties, inventaires, alertes de rupture ou surstock)
 - Réception et contrôle des marchandises (conformité, litiges fournisseurs, bons de livraison)
 - Préparation et expédition des commandes (picking, conditionnement, traçabilité)
 - Organisation et optimisation de l'espace de stockage au sein de LIDL_CAMPUS
-- Saisie et mise à jour des données dans les outils de gestion (WMS, ERP, tableurs)
 - Gestion des documents administratifs (BL, étiquettes, fiches de traçabilité)
-- Prévention des risques et respect des consignes de sécurité propres à LIDL_CAMPUS
-- Reporting et analyse des indicateurs logistiques (taux de service, taux de rotation, etc.)
+- Calculs logistiques (stock de sécurité, point de commande, taux de rotation)
 
-=== RÈGLES DE COMPORTEMENT ===
-1. PROFESSIONNALISME — Langage clair, précis et professionnel. Terminologie logistique maîtrisée.
-2. RIGUEUR — Cohérence vérifiée, notamment pour les calculs et procédures réglementaires.
-3. ADAPTABILITÉ — Niveau de détail adapté au contexte.
-4. PROACTIVITÉ — Solutions concrètes et actionnables systématiquement proposées.
-5. SÉCURITÉ — Consignes de sécurité rappelées dès qu'une activité risquée est évoquée.
-
-=== FORMAT DES RÉPONSES ===
-- Listes numérotées pour les procédures étape par étape
-- Listes à puces pour les éléments non ordonnés
-- **Termes techniques** en gras
-- Pour les calculs : formule → données → résultat
-- Référence à LIDL_CAMPUS quand cela apporte de la précision
-- Produire directement les documents demandés (BL, fiche NC, rapport…)
+=== RÈGLES ===
+1. Langage clair, précis et professionnel. Terminologie logistique maîtrisée.
+2. Toujours utiliser les données de stock réelles ci-dessus pour répondre.
+3. Signaler immédiatement les ruptures et niveaux critiques avec les références exactes.
+4. Proposer des actions concrètes basées sur les données réelles.
+5. Pour les calculs : formule → données → résultat.
+6. Rappeler les consignes de sécurité si activité risquée.
 
 === LIMITES ===
-- Pas d'accès temps réel au WMS/ERP sauf intégration configurée
-- Décisions juridiques/financières → consulter le responsable hiérarchique
-- Accident/incident grave → orienter vers procédures d'urgence et secours
-- Ne jamais inventer de données"""
+- Ne jamais inventer de données de stock. Utiliser uniquement les données fournies ci-dessus.
+- Pour les décisions financières importantes, recommander le responsable hiérarchique."""
 
 
-# def get_anthropic_response(messages_history: list) -> str:
-#     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-#     response = client.messages.create(
-#         model="claude-sonnet-4-20250514",
-#         max_tokens=1500,
-#         system=SYSTEM_PROMPT,
-#         messages=messages_history,
-#     )
-#     return response.content[0].text
-
-def get_anthropic_response(messages_history: list) -> str:
+def build_stock_context(user=None):
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1500,
-            system=SYSTEM_PROMPT,
-            messages=messages_history,
-        )
-        return response.content[0].text
+        from wms.models import Produit
+        import datetime
+        produits = Produit.objects.filter(actif=True)
+
+        ruptures = [p for p in produits if p.statut == 'rupture']
+        critiques = [p for p in produits if p.statut == 'critique']
+        bas = [p for p in produits if p.statut == 'bas']
+        ok = [p for p in produits if p.statut == 'ok']
+
+        context = f"Date/heure : {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
+        context += f"Entrepôt : LIDL_CAMPUS — {produits.count()} références actives\n\n"
+
+        if ruptures:
+            context += "🔴 RUPTURES DE STOCK (stock = 0) :\n"
+            for p in ruptures:
+                context += f"  - {p.reference} | {p.nom} | Emplacement: {p.emplacement}\n"
+            context += "\n"
+
+        if critiques:
+            context += "🟠 STOCKS CRITIQUES (sous le seuil minimum) :\n"
+            for p in critiques:
+                context += f"  - {p.reference} | {p.nom} | Stock: {p.stock_actuel} {p.unite} | Min: {p.stock_minimum} | Empl: {p.emplacement}\n"
+            context += "\n"
+
+        if bas:
+            context += "🟡 STOCKS BAS (proche du seuil) :\n"
+            for p in bas:
+                context += f"  - {p.reference} | {p.nom} | Stock: {p.stock_actuel} {p.unite} | Min: {p.stock_minimum}\n"
+            context += "\n"
+
+        context += f"✅ STOCKS OK : {len(ok)} références\n\n"
+        context += "Inventaire complet :\n"
+        for p in produits:
+            context += f"  - {p.reference} | {p.nom} | {p.get_categorie_display()} | Stock: {p.stock_actuel} {p.unite} | Min: {p.stock_minimum} | Max: {p.stock_maximum} | Empl: {p.emplacement} | Fournisseur: {p.fournisseur or 'N/A'}\n"
+
+        return context
+
     except Exception as e:
-        print(f"ERREUR ANTHROPIC : {type(e).__name__} — {e}")
-        raise
+        return f"⚠️ Données WMS non disponibles ({str(e)}). Réponds sur la base de tes connaissances générales."
+
+
+def get_anthropic_response(messages_history: list, user=None) -> str:
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    stock_context = build_stock_context(user)
+    system_prompt = SYSTEM_PROMPT_BASE.format(stock_context=stock_context)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=1500,
+        system=system_prompt,
+        messages=messages_history,
+    )
+    return response.content[0].text
+
