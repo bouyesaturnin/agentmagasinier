@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python manage.py migrate && python manage.py shell -c \"exec(open('wms/fixtures.py').read())\" && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+startCommand = "python manage.py migrate && python manage.py shell -c \"exec(open('wms/fixtures.py').read())\" && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
 restartPolicyType = "on_failure"
